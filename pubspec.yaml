@@ -1,0 +1,76 @@
+name: beakstorm_run
+description: "Build and run offline interval workouts without GPS or an account."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management and navigation
+  flutter_riverpod: ^3.0.0
+  go_router: ^17.5.0
+
+  # Local-only persistence
+  isar_community: ^3.3.2
+  isar_community_flutter_libs: ^3.3.2
+  path_provider: ^2.1.6
+  shared_preferences: ^2.5.5
+
+  # Workout session hardware needs
+  wakelock_plus: ^1.7.0
+  audioplayers: ^6.8.1
+
+  # Profile photo capture
+  image_picker: ^1.2.3
+  permission_handler: ^13.0.1
+
+  # Presentation
+  fl_chart: ^1.2.0
+  flutter_animate: ^4.5.2
+  cupertino_icons: ^1.0.8
+
+  # Legal pages rendered from bundled HTML, no network required
+  webview_flutter: ^4.14.1
+
+  # Utilities
+  collection: ^1.19.1
+  intl: ^0.20.3
+  package_info_plus: ^10.2.1
+  uuid: ^4.6.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.15.1
+  isar_community_generator: ^3.3.2
+  flutter_launcher_icons: ^0.14.4
+  image: ^4.9.2
+
+flutter:
+  uses-material-design: true
+
+  # Only the processed output is bundled. The delivered source sheets stay in
+  # assets/Beakstorm_Run_APPLICATION_* and are never shipped.
+  assets:
+    - assets/images/
+    - assets/sounds/
+    - assets/legal/
+
+  fonts:
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans-400.ttf
+          weight: 400
+        - asset: assets/fonts/PlusJakartaSans-500.ttf
+          weight: 500
+        - asset: assets/fonts/PlusJakartaSans-600.ttf
+          weight: 600
+        - asset: assets/fonts/PlusJakartaSans-700.ttf
+          weight: 700
+        - asset: assets/fonts/PlusJakartaSans-800.ttf
+          weight: 800
