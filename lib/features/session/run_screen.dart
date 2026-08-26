@@ -35,11 +35,7 @@ import '../profile/profile_controller.dart';
 /// The clock is driven by wall time rather than by counting ticks, so a stalled
 /// frame or a backgrounded app can never make the workout drift.
 class RunScreen extends ConsumerStatefulWidget {
-  const RunScreen({
-    super.key,
-    required this.workoutId,
-    this.planSessionKey,
-  });
+  const RunScreen({super.key, required this.workoutId, this.planSessionKey});
 
   final String workoutId;
 
@@ -78,6 +74,13 @@ class _RunScreenState extends ConsumerState<RunScreen> {
   /// and unwelcome on a quiet street.
   bool _metronomeMuted = false;
 
+  /// True from the moment the route is loaded until the 3-2-1 finishes, so
+  /// the clock and every sensor stay off until the runner is actually moving.
+  bool _counting = true;
+  static const _countdownFrom = 3;
+  int _count = _countdownFrom;
+  Timer? _countdownTimer;
+
   @override
   void initState() {
     super.initState();
@@ -87,6 +90,7 @@ class _RunScreenState extends ConsumerState<RunScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _countdownTimer?.cancel();
     ref.read(cadenceMetronomeProvider).stop();
     WakelockPlus.disable();
     super.dispose();
@@ -123,12 +127,57 @@ class _RunScreenState extends ConsumerState<RunScreen> {
     setState(() {
       _workout = workout;
       _stages = workout.runStages;
-      _sessionStartedAt = DateTime.now();
-      _stageStartedAt = DateTime.now();
+    });
+
+    _startCountdown();
+  }
+
+  /// Three ticks to get in position before the clock starts. Runs off a wall
+  /// clock like everything else here, so a dropped frame cannot stall it.
+  void _startCountdown() {
+    unawaited(ref.read(audioCueServiceProvider).play(AppSounds.buttonTap));
+    HapticFeedback.mediumImpact();
+
+    _countdownTimer = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => _countdownTick(),
+    );
+  }
+
+  void _countdownTick() {
+    if (!mounted) return;
+
+    if (_count <= 1) {
+      _countdownTimer?.cancel();
+      _beginRun();
+      return;
+    }
+
+    setState(() => _count--);
+    HapticFeedback.mediumImpact();
+    unawaited(ref.read(audioCueServiceProvider).play(AppSounds.buttonTap));
+  }
+
+  /// Cancels the countdown and leaves the screen. Nothing has started yet, so
+  /// there is no session to save.
+  void _cancelCountdown() {
+    _countdownTimer?.cancel();
+    if (mounted) Navigator.of(context).maybePop();
+  }
+
+  void _beginRun() {
+    if (!mounted) return;
+
+    final now = DateTime.now();
+
+    setState(() {
+      _counting = false;
+      _sessionStartedAt = now;
+      _stageStartedAt = now;
     });
 
     // The screen has to stay awake: the timer is the whole point of the run.
-    await WakelockPlus.enable();
+    unawaited(WakelockPlus.enable());
     unawaited(ref.read(audioCueServiceProvider).play(AppSounds.workoutStart));
 
     _timer = Timer.periodic(const Duration(milliseconds: 200), (_) => _tick());
@@ -142,7 +191,9 @@ class _RunScreenState extends ConsumerState<RunScreen> {
     }
 
     final plan = await ref.read(planRepositoryProvider).active();
-    final session = plan?.sessions.where((item) => item.key == planKey).firstOrNull;
+    final session = plan?.sessions
+        .where((item) => item.key == planKey)
+        .firstOrNull;
 
     return session?.toWorkout(DateTime.now());
   }
@@ -251,7 +302,9 @@ class _RunScreenState extends ConsumerState<RunScreen> {
       _index--;
       final previous = _stages[_index];
       final credited = _timePerTempo[previous.tempo] ?? Duration.zero;
-      final refund = credited < previous.duration ? credited : previous.duration;
+      final refund = credited < previous.duration
+          ? credited
+          : previous.duration;
 
       _timePerTempo[previous.tempo] = credited - refund;
       _completedBefore -= refund;
@@ -411,7 +464,7 @@ class _RunScreenState extends ConsumerState<RunScreen> {
               .clamp(0.0, 1.0);
 
     return PopScope(
-      canPop: _finished,
+      canPop: _finished || _counting,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _confirmStop();
       },
@@ -422,139 +475,153 @@ class _RunScreenState extends ConsumerState<RunScreen> {
           height: 420,
           opacity: _paused ? 0.25 : 0.5,
           child: SafeArea(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: Layout.maxContentWidth,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    Insets.xl,
-                    Insets.sm,
-                    Insets.xl,
-                    Insets.xl,
+            child: Stack(
+              children: [
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: Layout.maxContentWidth,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        Insets.xl,
+                        Insets.sm,
+                        Insets.xl,
+                        Insets.xl,
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              IconButton(
+                                onPressed: _confirmStop,
+                                icon: const Icon(Icons.close_rounded),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  workout.name,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: context.text.titleSmall,
+                                ),
+                              ),
+                              if (stage.cadence == null)
+                                const SizedBox(width: 48)
+                              else
+                                _CadenceToggle(
+                                  cadence: stage.cadence!,
+                                  muted: _metronomeMuted,
+                                  onTap: () {
+                                    setState(
+                                      () => _metronomeMuted = !_metronomeMuted,
+                                    );
+                                    _syncMetronome();
+                                  },
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: Insets.lg),
+                          TempoStrip(
+                            stages: _stages,
+                            height: 56,
+                            activeIndex: _index,
+                          ),
+                          const Spacer(),
+                          Text(
+                            'Stage ${_index + 1} of ${_stages.length}',
+                            style: context.text.labelMedium?.copyWith(
+                              color: colors.textMuted,
+                            ),
+                          ),
+                          const SizedBox(height: Insets.sm),
+                          Text(
+                            stage.tempo.label,
+                            style: context.text.displaySmall?.copyWith(
+                              color: tint,
+                            ),
+                          ),
+                          if (stage.note != null)
+                            Text(
+                              stage.note!,
+                              style: context.text.bodyMedium?.copyWith(
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                          const SizedBox(height: Insets.xl),
+                          _Countdown(
+                            remaining: _remaining,
+                            progress: progress,
+                            tint: tint,
+                            paused: _paused,
+                          ),
+                          const SizedBox(height: Insets.xl),
+                          _NextUp(stages: _stages, index: _index),
+                          const Spacer(),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _LiveControl(
+                                icon: Icons.remove_rounded,
+                                label: '30 sec',
+                                onTap: () => _adjustStage(-30),
+                              ),
+                              const SizedBox(width: Insets.md),
+                              _LiveControl(
+                                icon: _index == 0
+                                    ? Icons.replay_rounded
+                                    : Icons.skip_previous_rounded,
+                                label: _index == 0 ? 'Restart' : 'Back',
+                                onTap: _stepBack,
+                              ),
+                              const SizedBox(width: Insets.md),
+                              _LiveControl(
+                                icon: Icons.add_rounded,
+                                label: '30 sec',
+                                onTap: () => _adjustStage(30),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: Insets.lg),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: BeakButton(
+                                  label: _paused ? 'Resume' : 'Pause',
+                                  icon: _paused
+                                      ? Icons.play_arrow_rounded
+                                      : Icons.pause_rounded,
+                                  variant: _paused
+                                      ? BeakButtonVariant.primary
+                                      : BeakButtonVariant.secondary,
+                                  onPressed: _togglePause,
+                                ),
+                              ),
+                              const SizedBox(width: Insets.md),
+                              Expanded(
+                                child: BeakButton(
+                                  label: 'Skip stage',
+                                  icon: Icons.skip_next_rounded,
+                                  variant: BeakButtonVariant.secondary,
+                                  onPressed: _advance,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          IconButton(
-                            onPressed: _confirmStop,
-                            icon: const Icon(Icons.close_rounded),
-                          ),
-                          Expanded(
-                            child: Text(
-                              workout.name,
-                              textAlign: TextAlign.center,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: context.text.titleSmall,
-                            ),
-                          ),
-                          if (stage.cadence == null)
-                            const SizedBox(width: 48)
-                          else
-                            _CadenceToggle(
-                              cadence: stage.cadence!,
-                              muted: _metronomeMuted,
-                              onTap: () {
-                                setState(
-                                  () => _metronomeMuted = !_metronomeMuted,
-                                );
-                                _syncMetronome();
-                              },
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: Insets.lg),
-                      TempoStrip(
-                        stages: _stages,
-                        height: 56,
-                        activeIndex: _index,
-                      ),
-                      const Spacer(),
-                      Text(
-                        'Stage ${_index + 1} of ${_stages.length}',
-                        style: context.text.labelMedium?.copyWith(
-                          color: colors.textMuted,
-                        ),
-                      ),
-                      const SizedBox(height: Insets.sm),
-                      Text(
-                        stage.tempo.label,
-                        style: context.text.displaySmall?.copyWith(color: tint),
-                      ),
-                      if (stage.note != null)
-                        Text(
-                          stage.note!,
-                          style: context.text.bodyMedium?.copyWith(
-                            color: colors.textSecondary,
-                          ),
-                        ),
-                      const SizedBox(height: Insets.xl),
-                      _Countdown(
-                        remaining: _remaining,
-                        progress: progress,
-                        tint: tint,
-                        paused: _paused,
-                      ),
-                      const SizedBox(height: Insets.xl),
-                      _NextUp(stages: _stages, index: _index),
-                      const Spacer(),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _LiveControl(
-                            icon: Icons.remove_rounded,
-                            label: '30 sec',
-                            onTap: () => _adjustStage(-30),
-                          ),
-                          const SizedBox(width: Insets.md),
-                          _LiveControl(
-                            icon: _index == 0
-                                ? Icons.replay_rounded
-                                : Icons.skip_previous_rounded,
-                            label: _index == 0 ? 'Restart' : 'Back',
-                            onTap: _stepBack,
-                          ),
-                          const SizedBox(width: Insets.md),
-                          _LiveControl(
-                            icon: Icons.add_rounded,
-                            label: '30 sec',
-                            onTap: () => _adjustStage(30),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: Insets.lg),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: BeakButton(
-                              label: _paused ? 'Resume' : 'Pause',
-                              icon: _paused
-                                  ? Icons.play_arrow_rounded
-                                  : Icons.pause_rounded,
-                              variant: _paused
-                                  ? BeakButtonVariant.primary
-                                  : BeakButtonVariant.secondary,
-                              onPressed: _togglePause,
-                            ),
-                          ),
-                          const SizedBox(width: Insets.md),
-                          Expanded(
-                            child: BeakButton(
-                              label: 'Skip stage',
-                              icon: Icons.skip_next_rounded,
-                              variant: BeakButtonVariant.secondary,
-                              onPressed: _advance,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
                 ),
-              ),
+                if (_counting)
+                  Positioned.fill(
+                    child: _CountdownOverlay(
+                      workoutName: workout.name,
+                      count: _count,
+                      onCancel: _cancelCountdown,
+                    ),
+                  ),
+              ],
             ),
           ),
         ),
@@ -594,7 +661,9 @@ class _CadenceToggle extends StatelessWidget {
             color: muted ? colors.surface : colors.accentSoft,
             borderRadius: Corners.pillRadius,
             border: Border.all(
-              color: muted ? colors.border : colors.accent.withValues(alpha: 0.5),
+              color: muted
+                  ? colors.border
+                  : colors.accent.withValues(alpha: 0.5),
             ),
           ),
           child: Row(
@@ -666,6 +735,89 @@ class _LiveControl extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Covers the run screen with a 3-2-1 count before the clock and every
+/// sensor start. Cancelling here leaves no trace: nothing has been recorded
+/// yet, so there is nothing to save.
+class _CountdownOverlay extends StatelessWidget {
+  const _CountdownOverlay({
+    required this.workoutName,
+    required this.count,
+    required this.onCancel,
+  });
+
+  final String workoutName;
+  final int count;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return ColoredBox(
+      color: colors.canvas.withValues(alpha: 0.94),
+      child: Column(
+        children: [
+          Align(
+            alignment: Alignment.topRight,
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.only(right: Insets.sm),
+                child: IconButton(
+                  onPressed: onCancel,
+                  icon: const Icon(Icons.close_rounded),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    workoutName,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.titleSmall?.copyWith(
+                      color: colors.textMuted,
+                    ),
+                  ),
+                  const SizedBox(height: Insets.xxl),
+                  AnimatedSwitcher(
+                    duration: Motion.fast,
+                    switchInCurve: Motion.emphasized,
+                    switchOutCurve: Motion.exit,
+                    transitionBuilder: (child, animation) =>
+                        ScaleTransition(scale: animation, child: child),
+                    child: Text(
+                      '$count',
+                      key: ValueKey(count),
+                      style: context.text.displayLarge?.copyWith(
+                        fontSize: 96,
+                        color: colors.accent,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: Insets.lg),
+                  Text(
+                    'Get ready',
+                    style: context.text.labelMedium?.copyWith(
+                      color: colors.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: Insets.xxxl + MediaQuery.paddingOf(context).bottom),
+        ],
       ),
     );
   }
