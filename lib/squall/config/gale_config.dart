@@ -6,8 +6,8 @@ abstract final class GaleConfig {
   static const String iosStoreId = '6802349579';
 
   static const int pushSnoozeSeconds = 331847;
-  static const int organicRecheckSeconds = 8;
-  static const int savedUrlExpiryDays = 9;
+  static const int organicRecheckSeconds = 11;
+  static const int savedUrlExpiryDays = 11;
   static const int configPostTimeoutMs = 18400;
   static const int attPromptDelayMs = 540;
   static const int installSignalTimeoutMs = 7400;

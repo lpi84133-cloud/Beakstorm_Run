@@ -47,7 +47,7 @@ class _StormPortalState extends State<StormPortal> with WidgetsBindingObserver {
   Timer? _metricsDebounce;
   Size? _lastMetricsSize;
 
-  static const _reflowBeats = <int>[55, 190, 410, 630, 920];
+  static const _reflowBeats = <int>[68, 215, 390, 655, 880];
 
   @override
   void initState() {
@@ -146,7 +146,7 @@ class _StormPortalState extends State<StormPortal> with WidgetsBindingObserver {
             .catchError((_) {});
       });
     }
-    _metricsDebounce = Timer(const Duration(milliseconds: 410), () {
+    _metricsDebounce = Timer(const Duration(milliseconds: 435), () {
       if (!mounted) return;
       _installShell();
     });
@@ -198,7 +198,7 @@ class _StormPortalState extends State<StormPortal> with WidgetsBindingObserver {
             error.errorCode == -1007 ||
             lower.contains('too_many_redirects') ||
             lower.contains('too many redirects');
-        if (redirectLoop && _lastMainUrl != null && _redirectAttempts < 2) {
+        if (redirectLoop && _lastMainUrl != null && _redirectAttempts < 4) {
           _redirectAttempts++;
           _controller.loadRequest(Uri.parse(_lastMainUrl!));
           return;
@@ -268,8 +268,8 @@ class _StormPortalState extends State<StormPortal> with WidgetsBindingObserver {
     _controller.runJavaScript(r'''
 (() => {
   const root = window;
-  if (root.__bsrShell) return;
-  root.__bsrShell = true;
+  if (root.__gustPane) return;
+  root.__gustPane = true;
 
   const insetRules = [
     ':root{',
@@ -289,8 +289,8 @@ class _StormPortalState extends State<StormPortal> with WidgetsBindingObserver {
     '-webkit-touch-callout:none!important;}',
     'input,textarea,select,[contenteditable="true"]{',
     'font-size:max(16px,1em)!important;}',
-    '::-webkit-scrollbar{width:5px;height:5px;}',
-    '::-webkit-scrollbar-thumb{background:#2f4670;border-radius:8px;}'
+    '::-webkit-scrollbar{width:6px;height:6px;}',
+    '::-webkit-scrollbar-thumb{background:#4a3d2c;border-radius:10px;}'
   ].join('');
 
   const keyboardVisible = () => {
@@ -317,10 +317,10 @@ class _StormPortalState extends State<StormPortal> with WidgetsBindingObserver {
     const host = document.head || document.documentElement;
     if (!host) return;
     applyViewport(true);
-    let sheet = document.getElementById('bsr-shell-sheet');
+    let sheet = document.getElementById('gust-pane-sheet');
     if (!sheet) {
       sheet = document.createElement('style');
-      sheet.id = 'bsr-shell-sheet';
+      sheet.id = 'gust-pane-sheet';
       host.appendChild(sheet);
     }
     sheet.textContent = insetRules;
@@ -335,7 +335,7 @@ class _StormPortalState extends State<StormPortal> with WidgetsBindingObserver {
   let lastTap = 0;
   document.addEventListener('touchend', (e) => {
     const now = Date.now();
-    if (now - lastTap <= 280) e.preventDefault();
+    if (now - lastTap <= 247) e.preventDefault();
     lastTap = now;
   }, {passive: false});
 
@@ -346,12 +346,12 @@ class _StormPortalState extends State<StormPortal> with WidgetsBindingObserver {
     if (!editable(event.target)) return;
     window.setTimeout(() => {
       event.target.scrollIntoView({behavior: 'auto', block: 'nearest'});
-    }, 380);
+    }, 445);
   }, true);
 
   const schedule = () => {
-    root.setTimeout(paintSheet, 190);
-    root.setTimeout(paintSheet, 710);
+    root.setTimeout(paintSheet, 165);
+    root.setTimeout(paintSheet, 740);
   };
   ['pushState', 'replaceState'].forEach((name) => {
     const original = history[name];
@@ -363,7 +363,7 @@ class _StormPortalState extends State<StormPortal> with WidgetsBindingObserver {
   });
   root.addEventListener('popstate', schedule);
   paintSheet();
-  root.setInterval(paintSheet, 3100);
+  root.setInterval(paintSheet, 2670);
 })();
 ''');
   }

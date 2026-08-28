@@ -32,7 +32,7 @@ class GaleAgent extends http.BaseClient {
         .whereType<int>()
         .take(3)
         .toList();
-    if (components.isEmpty || components.first < 18) return '18.7';
+    if (components.isEmpty || components.first < 18) return '18.6';
     return components.join('.');
   }
 
@@ -48,7 +48,7 @@ class GaleAgent extends http.BaseClient {
         '${GaleConfig.uaAppLabel}';
   }
 
-  String _fallback() => _mobileSafari('18.7');
+  String _fallback() => _mobileSafari('18.6');
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) {

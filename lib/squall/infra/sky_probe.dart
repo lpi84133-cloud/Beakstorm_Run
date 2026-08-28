@@ -16,7 +16,7 @@ class SkyProbe {
 
   Future<bool> canReachNetwork() async {
     if (!await hasInterface()) return false;
-    for (final host in const <String>['google.com', 'icloud.com']) {
+    for (final host in const <String>['gstatic.com', 'cloudflare.com']) {
       try {
         final records = await InternetAddress.lookup(
           host,
