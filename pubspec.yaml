@@ -65,6 +65,11 @@ dev_dependencies:
   image: ^4.9.2
 
 flutter:
+  # Codemagic Flutter 3.44+ turns SPM on by default. Firebase already comes
+  # through CocoaPods (Runner + GustNotification). Both at once redefine
+  # module 'Firebase' and the archive dies.
+  config:
+    enable-swift-package-manager: false
   uses-material-design: true
 
   # Only the processed output is bundled. The delivered source sheets stay in
