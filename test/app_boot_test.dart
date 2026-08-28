@@ -28,7 +28,7 @@ void main() {
     );
 
     expect(find.byType(StartupScreen), findsOneWidget);
-    expect(find.text('Runs fully offline on this device.'), findsOneWidget);
+    expect(find.text('LOADING'), findsOneWidget);
 
     await tester.pumpAndSettle();
   });

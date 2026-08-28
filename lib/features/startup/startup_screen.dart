@@ -58,7 +58,7 @@ class StartupScreen extends StatelessWidget {
                         constraints: const BoxConstraints(
                           maxWidth: Layout.maxContentWidth,
                         ),
-                        child: _ProgressBlock(progress: progress, label: label),
+                        child: _ProgressBlock(progress: progress),
                       ),
                     ),
                   ),
@@ -92,10 +92,9 @@ class _BottomScrim extends StatelessWidget {
 /// The artwork is bright and busy at the bottom, so the readout sits on its own
 /// frosted panel rather than relying on a scrim for contrast.
 class _ProgressBlock extends StatelessWidget {
-  const _ProgressBlock({required this.progress, required this.label});
+  const _ProgressBlock({required this.progress});
 
   final double progress;
-  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -115,7 +114,7 @@ class _ProgressBlock extends StatelessWidget {
             borderRadius: const BorderRadius.all(Corners.lg),
             border: Border.all(color: const Color(0x2EFFFFFF)),
           ),
-          child: _ProgressReadout(progress: progress, label: label),
+          child: _ProgressReadout(progress: progress),
         ),
       ),
     );
@@ -123,10 +122,9 @@ class _ProgressBlock extends StatelessWidget {
 }
 
 class _ProgressReadout extends StatelessWidget {
-  const _ProgressReadout({required this.progress, required this.label});
+  const _ProgressReadout({required this.progress});
 
   final double progress;
-  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -164,13 +162,13 @@ class _ProgressReadout extends StatelessWidget {
               ),
             ),
             const SizedBox(width: Insets.lg),
-            Expanded(
+            const Expanded(
               child: Text(
-                label.toUpperCase(),
+                'LOADING',
                 textAlign: TextAlign.right,
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: kFontFamily,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
@@ -186,17 +184,6 @@ class _ProgressReadout extends StatelessWidget {
           value: progress,
           thickness: 14,
           trackColor: Colors.transparent,
-        ),
-        const SizedBox(height: Insets.md),
-        const Text(
-          'Runs fully offline on this device.',
-          style: TextStyle(
-            fontFamily: kFontFamily,
-            fontSize: 12.5,
-            fontWeight: FontWeight.w500,
-            height: 1.4,
-            color: Color(0xFFBFC9DA),
-          ),
         ),
       ],
     );

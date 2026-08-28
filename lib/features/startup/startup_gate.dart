@@ -31,6 +31,10 @@ class _StartupGateState extends ConsumerState<StartupGate>
   /// Floor on movement so a large gap never crawls, expressed per second.
   static const _minimumRate = 0.10;
 
+  /// Keep the launch screen on screen long enough to read, even when init
+  /// finishes in a few milliseconds on a warm release launch.
+  static const _minimumVisible = Duration(milliseconds: 2400);
+
   late final Ticker _ticker;
   Duration _lastTick = Duration.zero;
   double _displayed = 0;
@@ -60,12 +64,20 @@ class _StartupGateState extends ConsumerState<StartupGate>
 
     final progress = ref.read(startupControllerProvider);
     final step = math.min(delta, 0.05);
-    final gap = progress.value - _displayed;
+
+    // Cap how far the bar may travel by wall-clock time so a near-instant
+    // startup still fills the bar over the minimum visible window.
+    final timeCap = math.min(
+      1.0,
+      elapsed.inMicroseconds / _minimumVisible.inMicroseconds,
+    );
+    final target = math.min(progress.value, timeCap);
+    final gap = target - _displayed;
 
     final next = gap <= 0.0015
-        ? progress.value
+        ? target
         : math.min(
-            progress.value,
+            target,
             _displayed + math.max(gap * _catchUpRate * step, _minimumRate * step),
           );
 
@@ -73,7 +85,11 @@ class _StartupGateState extends ConsumerState<StartupGate>
       setState(() => _displayed = next);
     }
 
-    if (progress.isReady && _displayed >= 0.9995 && !_handedOver) {
+    final heldLongEnough = elapsed >= _minimumVisible;
+    if (progress.isReady &&
+        _displayed >= 0.9995 &&
+        heldLongEnough &&
+        !_handedOver) {
       _ticker.stop();
       setState(() => _handedOver = true);
     }

@@ -94,12 +94,13 @@ class CadenceMetronome {
 
     // Fire and forget: a tick that arrives late is worse than one that is
     // dropped, so failures are ignored rather than awaited.
-    player
-        .seek(Duration.zero)
-        .then((_) => player.resume())
-        .catchError((Object error) {
-          debugPrint('cadence tick failed: $error');
-        });
+    player.seek(Duration.zero).then((_) => player.resume()).catchError((
+      Object error,
+    ) {
+      // dart format off
+      assert(() { debugPrint('cadence tick failed: $error'); return true; }());
+      // dart format on
+    });
   }
 
   Future<void> _prepare() async {
@@ -116,7 +117,9 @@ class CadenceMetronome {
     } catch (error) {
       // Without audio the haptic accent still carries the rhythm, so a busy or
       // unavailable audio route degrades instead of stopping the run.
-      debugPrint('cadence audio unavailable: $error');
+      // dart format off
+      assert(() { debugPrint('cadence audio unavailable: $error'); return true; }());
+      // dart format on
     }
   }
 

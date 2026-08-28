@@ -44,7 +44,9 @@ class AudioCueService {
       await player.resume();
     } catch (error) {
       // A missing or busy audio route must never interrupt a workout.
-      debugPrint('audio cue failed: $cue ($error)');
+      // dart format off
+      assert(() { debugPrint('audio cue failed: $cue ($error)'); return true; }());
+      // dart format on
     }
   }
 

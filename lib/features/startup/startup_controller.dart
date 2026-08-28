@@ -86,7 +86,9 @@ class StartupController extends Notifier<StartupProgress> {
             .timeout(timeout);
       } catch (error, stack) {
         degraded = true;
-        debugPrint('startup task "${task.label}" skipped: $error\n$stack');
+        // dart format off
+        assert(() { debugPrint('startup task "${task.label}" skipped: $error\n$stack'); return true; }());
+        // dart format on
       }
 
       completed += share;

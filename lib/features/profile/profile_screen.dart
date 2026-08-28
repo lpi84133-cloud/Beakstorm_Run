@@ -69,7 +69,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         ),
       );
-      debugPrint('avatar picking failed: $error');
+      // dart format off
+      assert(() { debugPrint('avatar picking failed: $error'); return true; }());
+      // dart format on
     }
   }
 
@@ -250,8 +252,7 @@ class _AboutCardState extends State<_AboutCard> {
             leading: const Icon(Icons.lock_outline_rounded),
             title: const Text('Privacy Policy'),
             trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () =>
-                context.push(AppRoute.legal(LegalDocument.privacy)),
+            onTap: () => context.push(AppRoute.legal(LegalDocument.privacy)),
           ),
           const Divider(height: 1),
           ListTile(
@@ -259,8 +260,7 @@ class _AboutCardState extends State<_AboutCard> {
             leading: const Icon(Icons.help_outline_rounded),
             title: const Text('Support and FAQ'),
             trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () =>
-                context.push(AppRoute.legal(LegalDocument.support)),
+            onTap: () => context.push(AppRoute.legal(LegalDocument.support)),
           ),
           const Divider(height: 1),
           ListTile(
@@ -269,9 +269,7 @@ class _AboutCardState extends State<_AboutCard> {
             title: const Text('Version'),
             trailing: Text(
               _version,
-              style: context.text.bodyMedium?.copyWith(
-                color: colors.textMuted,
-              ),
+              style: context.text.bodyMedium?.copyWith(color: colors.textMuted),
             ),
           ),
         ],

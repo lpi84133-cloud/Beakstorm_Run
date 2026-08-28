@@ -1,17 +1,5 @@
-# beakstorm_run
+# Beakstorm Run
 
-Offline interval workout builder and timer
+Beakstorm Run is an offline interval workout builder and timer for iPhone. You plan routes as a sequence of walk, easy run, run and fast stages, start a session without GPS or an account, and keep history, a training plan and a profile photo on this device.
 
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+The app works without a network connection. Privacy and support pages are also bundled so they stay available offline.

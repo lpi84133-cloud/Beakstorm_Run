@@ -142,7 +142,9 @@ class ProfileController extends Notifier<Profile> {
       final file = File(previous);
       if (file.existsSync()) await file.delete();
     } on FileSystemException catch (error) {
-      debugPrint('could not remove the old avatar: $error');
+      // dart format off
+      assert(() { debugPrint('could not remove the old avatar: $error'); return true; }());
+      // dart format on
     }
   }
 }
