@@ -687,7 +687,7 @@
 			baseConfigurationReference = E3B95C3DD47500B04D46B63D /* Pods-GustNotification.profile.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = Q946GDB53X;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = GustNotification/Info.plist;
@@ -865,7 +865,7 @@
 			baseConfigurationReference = CAB79379A0E32FE5CF802FE6 /* Pods-GustNotification.debug.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = Q946GDB53X;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = GustNotification/Info.plist;
@@ -886,7 +886,7 @@
 			baseConfigurationReference = 34C46CE051421973BA064EC5 /* Pods-GustNotification.release.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = Q946GDB53X;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = GustNotification/Info.plist;
