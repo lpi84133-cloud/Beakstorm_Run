@@ -36,16 +36,15 @@ class GaleAgent extends http.BaseClient {
     return components.join('.');
   }
 
-  // GAME THEME CATEGORY: slot (operator required UA identity suffix).
-  // Identity tokens are decoded at runtime — no plaintext suffix markers.
+  // App identity is now carried via X-Partner-App-Id / X-Partner-App-Name
+  // headers on the config POST (see GaleExchange) rather than the UA, so
+  // the binary does not carry an `appid/... appname/...` suffix.
   String _mobileSafari(String iosVersion) {
     final cpu = iosVersion.replaceAll('.', '_');
     return '${GaleConfig.uaProduct} ${GaleConfig.uaPlatformPrefix} $cpu '
         '${GaleConfig.uaPlatformSuffix} ${GaleConfig.uaEngine} '
         'Version/${GaleConfig.safariVersion} ${GaleConfig.uaMobileToken} '
-        'Safari/${GaleConfig.safariTail} ${GaleConfig.uaAppIdTok}'
-        '${GaleConfig.iosStoreId} ${GaleConfig.uaAppNameTok}'
-        '${GaleConfig.uaAppLabel}';
+        'Safari/${GaleConfig.safariTail}';
   }
 
   String _fallback() => _mobileSafari('18.6');

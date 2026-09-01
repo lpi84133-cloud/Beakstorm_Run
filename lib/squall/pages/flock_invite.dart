@@ -142,7 +142,7 @@ class _FlockInviteState extends State<FlockInvite> {
 
   Widget _landscapeActions() {
     return Align(
-      alignment: const Alignment(0, 0.94),
+      alignment: const Alignment(0, 0.76),
       child: FractionallySizedBox(
         widthFactor: 0.62,
         child: Row(

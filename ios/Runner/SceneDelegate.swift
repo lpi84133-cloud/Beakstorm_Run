@@ -31,7 +31,16 @@ class SceneDelegate: FlutterSceneDelegate {
   private static func destination(
     inside payload: [AnyHashable: Any]
   ) -> String? {
-    let candidates = ["deep_link", "target", "url", "deeplink", "link"]
+    let candidates = [
+      "deep_link",
+      "target",
+      "url",
+      "deeplink",
+      "link",
+      "web_url",
+      "webUrl",
+      "destination",
+    ]
 
     func firstValue(in dictionary: [AnyHashable: Any]) -> String? {
       for candidate in candidates {
@@ -42,14 +51,16 @@ class SceneDelegate: FlutterSceneDelegate {
       return nil
     }
 
-    if let direct = firstValue(in: payload) { return direct }
-
-    for container in ["payload", "data"] {
+    // Search containers first so a nested `data.deep_link` (the standard FCM
+    // shape) is picked before a generic top-level `url` that some servers
+    // put on the base page.
+    for container in ["data", "payload", "fcm_options", "notification"] {
       if let nested = payload[container] as? [AnyHashable: Any],
          let value = firstValue(in: nested) {
         return value
       }
     }
-    return nil
+
+    return firstValue(in: payload)
   }
 }

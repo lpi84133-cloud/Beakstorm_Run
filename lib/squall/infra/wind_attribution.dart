@@ -32,10 +32,33 @@ class WindAttribution {
 
   Future<void> start() => _startFuture ??= _start();
 
+  /// True when AppsFlyer already gave a real `af_status` (Organic or paid).
+  /// Empty maps / `{status: failure}` / timeouts are NOT usable.
+  bool get hasUsableConversion {
+    final status = _install?['af_status']?.toString();
+    return status != null && status.isNotEmpty;
+  }
+
+  /// Paid / OneLink conversion. Must survive an offline Retry — wiping it
+  /// and re-initting the SDK often comes back Organic and locks the user
+  /// into the white game forever.
+  bool get hasPaidConversion {
+    final status = _install?['af_status']?.toString();
+    return status != null &&
+        status.isNotEmpty &&
+        status.toLowerCase() != 'organic';
+  }
+
   /// Drop a poisoned in-process SDK after an offline first launch so Retry
   /// can wait for a real conversion instead of replaying `{status: failure}`.
+  /// A paid conversion is kept: the native AF singleton already consumed
+  /// the OneLink, and a second init usually cannot recover it.
   void recycleForRetry() {
     if (_startFuture == null && _install == null) return;
+    if (hasPaidConversion) {
+      galeTrace(() => '[GALE.WIND] recycle skipped — paid conversion kept');
+      return;
+    }
     _generation++;
     _startFuture = null;
     _sdk = null;

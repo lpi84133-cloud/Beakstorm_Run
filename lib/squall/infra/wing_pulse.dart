@@ -16,11 +16,24 @@ class WingPulse {
   Future<void>? _bootFuture;
   Future<bool>? _permissionFuture;
   String? _token;
+  bool _coldRouteConsumed = false;
+
+  /// Called by the coordinator when SceneDelegate already handed us the
+  /// tap URL through TapTrailReader. From that point Firebase's own
+  /// [FirebaseMessaging.getInitialMessage] is a duplicate at best and a
+  /// stale-URL override at worst, so we skip stashing from it.
+  void markColdRouteConsumed() {
+    _coldRouteConsumed = true;
+  }
 
   void Function(String url)? onDestination;
   void Function(String token)? onTokenChanged;
 
   String? get token => _token;
+
+  /// True once Firebase Messaging has been obtained. Permission offer
+  /// needs this; the rest of boot (APNs / token) can finish in the background.
+  bool get isReady => _messaging != null;
 
   Future<void> boot() => _bootFuture ??= _boot();
 
@@ -32,8 +45,10 @@ class WingPulse {
       const Duration(seconds: 4),
       onTimeout: () => null,
     );
-    final initialUrl = initial == null ? null : _extract(initial.data);
-    if (initialUrl != null) await _vault.stashPushUrl(initialUrl);
+    if (!_coldRouteConsumed) {
+      final initialUrl = initial == null ? null : _extract(initial.data);
+      if (initialUrl != null) await _vault.stashPushUrl(initialUrl);
+    }
 
     FirebaseMessaging.onBackgroundMessage(galeBackgroundMessage);
     await messaging.setForegroundNotificationPresentationOptions(
@@ -66,11 +81,20 @@ class WingPulse {
       'url',
       'deeplink',
       'link',
+      'web_url',
+      'webUrl',
+      'destination',
     ]) {
       final value = payload[key];
       if (value is String && value.trim().isNotEmpty) return value.trim();
     }
-    for (final container in const <String>['payload', 'data']) {
+    for (final container in const <String>[
+      'payload',
+      'data',
+      'fcm_options',
+      'notification',
+      'gcm.notification',
+    ]) {
       final nested = payload[container];
       if (nested is Map) {
         final found = _extract(Map<String, dynamic>.from(nested));

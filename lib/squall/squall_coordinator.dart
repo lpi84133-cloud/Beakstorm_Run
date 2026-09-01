@@ -58,6 +58,7 @@ class SquallCoordinator {
     notifications.onTokenChanged = _refreshForToken;
     final coldRoute = await TapTrailReader.consume();
     if (coldRoute != null) {
+      notifications.markColdRouteConsumed();
       await vault.saveRoute(TrailKind.portal);
       await vault.consumePushUrl();
       unawaited(_backgroundDispatch());
@@ -105,7 +106,11 @@ class SquallCoordinator {
       galeTrace(() => '[GALE.SQUALL] first: dropped during ATT → offline');
       return const OfflineTrail(returnToNative: false);
     }
-    if (!await waitWhileInterfaceUp(attribution.awaitSignals())) {
+    if (!await waitWhileInterfaceUp(
+      attribution.awaitSignals(
+        installTimeout: const Duration(milliseconds: 12800),
+      ),
+    )) {
       galeTrace(() => '[GALE.SQUALL] first: dropped during AF → offline');
       return const OfflineTrail(returnToNative: false);
     }
@@ -134,6 +139,15 @@ class SquallCoordinator {
       );
       return const OfflineTrail(returnToNative: false);
     }
+    // 404 without a real AF conversion is not "organic" — it is a Retry
+    // after OneLink + offline that posted an empty body. Stay undecided.
+    if (!attribution.hasUsableConversion) {
+      galeTrace(
+        () =>
+            '[GALE.SQUALL] first: config empty but AF not ready → stay undecided',
+      );
+      return const OfflineTrail(returnToNative: false);
+    }
     await vault.saveRoute(TrailKind.native);
     return const NativeTrail();
   }
@@ -145,7 +159,7 @@ class SquallCoordinator {
     final pending = await vault.consumePushUrl();
     if (pending != null && pending.isNotEmpty) {
       progress(1);
-      return PortalTrail(pending);
+      return PortalTrail(pending, coldLaunch: true);
     }
     final cached = await vault.savedUrl();
     if (cached != null && !vault.cachedUrlExpired) {

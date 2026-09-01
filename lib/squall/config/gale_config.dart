@@ -5,7 +5,7 @@ abstract final class GaleConfig {
   static const String bundleId = 'com.beakstormrun.beakstormrungame';
   static const String iosStoreId = '6802349579';
 
-  static const int pushSnoozeSeconds = 331847;
+  static const int pushSnoozeSeconds = 259847;
   static const int organicRecheckSeconds = 11;
   static const int savedUrlExpiryDays = 11;
   static const int configPostTimeoutMs = 18400;
